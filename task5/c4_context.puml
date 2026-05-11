@@ -1,0 +1,33 @@
+@startuml c4 context task 5
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(new_client, "Новый клиент", "Пользователь сайта без регистрации в банке")
+Person(ib_client, "Клиент интернет-банка", "Авторизованный клиент банка")
+Person(branch_manager, "Сотрудник отделения", "Идентифицирует клиента и продолжает работу с заявкой")
+Person(credit_manager, "Сотрудник кредитного бэк-офиса", "Обрабатывает кредитную заявку")
+
+System(site, "Сайт банка", "Показывает кредитные предложения и принимает заявки новых клиентов")
+System(internet_bank, "Интернет-банк", "Показывает кредитные предложения и принимает заявки авторизованных клиентов")
+System(credit_application_service, "Сервис кредитных заявок", "Принимает онлайн-заявки и передаёт их в кредитный процесс")
+System(credit_conveyor, "Кредитный конвейер", "Основная система обработки кредитных заявок")
+System(abs, "АБС", "Основная банковская система для счетов, клиентов и финальных операций")
+System_Ext(telecom_operator, "Телеком-оператор", "Доставляет SMS клиентам")
+
+Rel(new_client, site, "Смотрит условия и подаёт заявку", "HTTPS")
+Rel(site, credit_application_service, "Передаёт кредитную заявку", "HTTPS")
+
+Rel(ib_client, internet_bank, "Смотрит предложения и подаёт заявку", "HTTPS")
+Rel(internet_bank, credit_application_service, "Передаёт кредитную заявку", "HTTPS")
+
+Rel(credit_application_service, credit_conveyor, "Передаёт заявку в обработку", "API")
+Rel(credit_manager, credit_conveyor, "Обрабатывает заявку")
+
+Rel(branch_manager, abs, "Идентифицирует клиента и продолжает заявку")
+Rel(credit_conveyor, abs, "Передаёт финальные данные по заявке")
+
+Rel(credit_application_service, telecom_operator, "Отправляет SMS-уведомления")
+Rel(telecom_operator, new_client, "Доставляет SMS")
+Rel(telecom_operator, ib_client, "Доставляет SMS")
+
+@enduml

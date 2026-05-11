@@ -1,0 +1,57 @@
+@startuml c4 container task 5
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(new_client, "Новый клиент")
+Person(ib_client, "Клиент интернет-банка")
+Person(branch_manager, "Сотрудник отделения")
+Person(credit_manager, "Сотрудник кредитного бэк-офиса")
+
+System_Ext(telecom_operator, "Телеком-оператор", "Отправка SMS")
+
+System_Boundary(site_boundary, "Сайт банка") {
+    Container(site_app, "Сайт", "PHP + React.js", "Показывает кредитные предложения и принимает заявки")
+}
+
+System_Boundary(internet_bank_boundary, "Интернет-банк") {
+    Container(internet_bank_app, "Интернет-банк API", "ASP.NET MVC / .NET Framework 4.5", "Показывает кредитные предложения и принимает заявки")
+    ContainerDb(internet_bank_db, "БД интернет-банка", "MS SQL", "Данные интернет-банка")
+}
+
+System_Boundary(credit_online_boundary, "Контур онлайн-кредитования") {
+    Container(credit_api, "Credit Application API", "Java Spring Boot", "Принимает кредитные заявки с сайта и интернет-банка")
+    ContainerDb(credit_db, "БД кредитных заявок", "PostgreSQL", "Заявки, статусы, идентификаторы онлайн-заявок")
+}
+
+System_Boundary(conveyor_boundary, "Кредитный конвейер") {
+    Container(credit_conveyor, "Кредитный конвейер", "Camunda BPM + Java", "Обрабатывает кредитные заявки")
+    ContainerDb(conveyor_db, "БД кредитного конвейера", "Oracle", "Данные кредитных заявок и бизнес-процессов")
+}
+
+System_Boundary(abs_boundary, "АБС") {
+    Container(abs_app, "АБС", "Delphi + PL/SQL", "Клиенты, счета, кредитные операции")
+    ContainerDb(abs_db, "БД АБС", "Oracle", "Клиенты, счета, договоры, операции")
+}
+
+Rel(new_client, site_app, "Подаёт заявку", "HTTPS")
+Rel(site_app, credit_api, "Создаёт кредитную заявку", "HTTPS API")
+
+Rel(ib_client, internet_bank_app, "Подаёт заявку", "HTTPS")
+Rel(internet_bank_app, internet_bank_db, "Читает и сохраняет данные")
+Rel(internet_bank_app, credit_api, "Создаёт кредитную заявку", "HTTPS API")
+
+Rel(credit_api, credit_db, "Хранит заявку и статус")
+Rel(credit_api, credit_conveyor, "Передаёт заявку в обработку", "API")
+
+Rel(credit_conveyor, conveyor_db, "Хранит процесс обработки заявки")
+Rel(credit_manager, credit_conveyor, "Обрабатывает заявку")
+
+Rel(branch_manager, abs_app, "Идентифицирует клиента и продолжает заявку")
+Rel(abs_app, abs_db, "Читает и сохраняет данные")
+Rel(credit_conveyor, abs_app, "Передаёт финальные данные по заявке", "API")
+
+Rel(credit_api, telecom_operator, "Отправляет SMS-уведомления")
+Rel(telecom_operator, new_client, "Доставляет SMS")
+Rel(telecom_operator, ib_client, "Доставляет SMS")
+
+@enduml
