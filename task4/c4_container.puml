@@ -5,10 +5,13 @@
 Person(new_client, "Новый клиент")
 Person(ib_client, "Клиент интернет-банка")
 Person(call_center_manager, "Менеджер кол-центра")
+Person(partner_operator, "Оператор партнёрского кол-центра")
 Person(deposit_manager, "Сотрудник депозитного бэк-офиса")
 Person(branch_manager, "Сотрудник отделения")
 
 System_Ext(telecom_operator, "Телеком-оператор", "Доставляет SMS клиентам")
+System_Ext(partner_sftp, "SFTP-сервер партнёра", "Защищённый файловый обмен для передачи ставок")
+System_Ext(partner_call_center, "Система партнёрского кол-центра", "Внешняя система партнёра")
 
 System_Boundary(site_boundary, "Сайт банка") {
     Container(site_app, "Сайт", "PHP + React.js", "Показывает депозитные продукты и принимает заявки новых клиентов")
@@ -25,13 +28,17 @@ System_Boundary(deposit_boundary, "Контур депозитных заяво�
     ContainerQueue(kafka, "Kafka", "Kafka", "Очередь событий для SMS-уведомлений")
 }
 
+System_Boundary(rates_boundary, "Контур депозитных ставок") {
+    Container(rates_exporter, "Rates File Exporter", "Java Spring Boot", "Формирует файл с актуальными ставками для партнёрского кол-центра")
+}
+
 System_Boundary(abs_boundary, "АБС") {
     Container(abs_app, "АБС", "Delphi + PL/SQL", "Обрабатывает депозитные заявки, хранит ставки и открывает депозиты")
     ContainerDb(abs_db, "БД АБС", "Oracle", "Клиенты, счета, депозиты, ставки")
 }
 
 System_Boundary(call_center_boundary, "Система кол-центра") {
-    Container(call_center_app, "Система кол-центра", "React.js + Java Spring Boot", "Работа с заявками новых клиентов")
+    Container(call_center_app, "Система кол-центра", "React.js + Java Spring Boot", "Работа с заявками новых клиентов и просмотр актуальных ставок")
 }
 
 System_Boundary(sms_boundary, "SMS-контур") {
@@ -50,12 +57,17 @@ Rel(deposit_api, deposit_db, "Хранит заявки и статусы")
 Rel(deposit_api, abs_app, "Передаёт заявку на обработку", "API")
 Rel(deposit_api, call_center_app, "Передаёт заявки новых клиентов", "API")
 
-Rel(call_center_manager, call_center_app, "Работает с заявкой")
+Rel(call_center_manager, call_center_app, "Работает с заявкой и консультирует по ставкам")
 
-Rel(deposit_manager, abs_app, "Подтверждает условия депозита")
+Rel(deposit_manager, abs_app, "Подтверждает условия депозита и ведёт ставки")
 Rel(branch_manager, abs_app, "Идентифицирует клиента")
 Rel(abs_app, abs_db, "Читает и сохраняет данные")
 Rel(abs_app, kafka, "Публикует события о подтверждении ставки и открытии депозита")
+
+Rel(abs_app, rates_exporter, "Передаёт актуальные ставки", "API")
+Rel(rates_exporter, partner_sftp, "Передаёт файл со ставками", "SFTP")
+Rel(partner_sftp, partner_call_center, "Передаёт файл во внешнюю систему партнёра")
+Rel(partner_operator, partner_call_center, "Консультирует клиента по ставкам")
 
 Rel(kafka, sms_service, "Передаёт события для отправки SMS")
 Rel(sms_service, telecom_operator, "Отправляет SMS")
