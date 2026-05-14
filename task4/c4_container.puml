@@ -1,0 +1,77 @@
+@startuml c4 container task 4
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(new_client, "Новый клиент")
+Person(ib_client, "Клиент интернет-банка")
+Person(call_center_manager, "Менеджер кол-центра")
+Person(partner_operator, "Оператор партнёрского кол-центра")
+Person(deposit_manager, "Сотрудник депозитного бэк-офиса")
+Person(branch_manager, "Сотрудник отделения")
+
+System_Ext(telecom_operator, "Телеком-оператор", "Доставляет SMS клиентам")
+System_Ext(partner_sftp, "SFTP-сервер партнёра", "Защищённый файловый обмен для передачи ставок")
+System_Ext(partner_call_center, "Система партнёрского кол-центра", "Внешняя система партнёра")
+
+System_Boundary(site_boundary, "Сайт банка") {
+    Container(site_app, "Сайт", "PHP + React.js", "Показывает депозитные продукты и принимает заявки новых клиентов")
+}
+
+System_Boundary(internet_bank_boundary, "Интернет-банк") {
+    Container(internet_bank_app, "Интернет-банк API", "ASP.NET MVC / .NET Framework 4.5", "Показывает депозитные продукты, принимает заявки, подтверждает операции по SMS")
+    ContainerDb(internet_bank_db, "БД интернет-банка", "MS SQL", "Данные интернет-банка")
+}
+
+System_Boundary(deposit_boundary, "Контур депозитных заявок") {
+    Container(deposit_api, "Deposit Application API", "Java Spring Boot", "Принимает заявки на депозиты с сайта и интернет-банка, хранит статусы и передаёт заявки в другие системы")
+    ContainerDb(deposit_db, "БД депозитных заявок", "MS SQL", "Заявки на депозиты и статусы обработки")
+    ContainerQueue(kafka, "Kafka", "Kafka", "Очередь событий для SMS-уведомлений")
+}
+
+System_Boundary(rates_boundary, "Контур депозитных ставок") {
+    Container(rates_exporter, "Rates File Exporter", "Java Spring Boot", "Формирует файл с актуальными ставками для партнёрского кол-центра")
+}
+
+System_Boundary(abs_boundary, "АБС") {
+    Container(abs_app, "АБС", "Delphi + PL/SQL", "Обрабатывает депозитные заявки, хранит ставки и открывает депозиты")
+    ContainerDb(abs_db, "БД АБС", "Oracle", "Клиенты, счета, депозиты, ставки")
+}
+
+System_Boundary(call_center_boundary, "Система кол-центра") {
+    Container(call_center_app, "Система кол-центра", "React.js + Java Spring Boot", "Работа с заявками новых клиентов и просмотр актуальных ставок")
+}
+
+System_Boundary(sms_boundary, "SMS-контур") {
+    Container(sms_service, "SMS-сервис", "Integration service", "Отправляет SMS-коды и SMS-уведомления")
+}
+
+Rel(new_client, site_app, "Смотрит депозиты и подаёт заявку", "HTTPS")
+Rel(site_app, deposit_api, "Передаёт заявку на депозит", "HTTPS API")
+
+Rel(ib_client, internet_bank_app, "Смотрит депозиты и подаёт заявку", "HTTPS")
+Rel(internet_bank_app, internet_bank_db, "Читает и сохраняет данные")
+Rel(internet_bank_app, deposit_api, "Передаёт заявку на депозит", "HTTPS API")
+Rel(internet_bank_app, sms_service, "Запрашивает SMS-код", "HTTPS API")
+
+Rel(deposit_api, deposit_db, "Хранит заявки и статусы")
+Rel(deposit_api, abs_app, "Передаёт заявку на обработку", "API")
+Rel(deposit_api, call_center_app, "Передаёт заявки новых клиентов", "API")
+
+Rel(call_center_manager, call_center_app, "Работает с заявкой и консультирует по ставкам")
+
+Rel(deposit_manager, abs_app, "Подтверждает условия депозита и ведёт ставки")
+Rel(branch_manager, abs_app, "Идентифицирует клиента")
+Rel(abs_app, abs_db, "Читает и сохраняет данные")
+Rel(abs_app, kafka, "Публикует события о подтверждении ставки и открытии депозита")
+
+Rel(abs_app, rates_exporter, "Передаёт актуальные ставки", "API")
+Rel(rates_exporter, partner_sftp, "Передаёт файл со ставками", "SFTP")
+Rel(partner_sftp, partner_call_center, "Передаёт файл во внешнюю систему партнёра")
+Rel(partner_operator, partner_call_center, "Консультирует клиента по ставкам")
+
+Rel(kafka, sms_service, "Передаёт события для отправки SMS")
+Rel(sms_service, telecom_operator, "Отправляет SMS")
+Rel(telecom_operator, new_client, "Доставляет SMS")
+Rel(telecom_operator, ib_client, "Доставляет SMS")
+
+@enduml

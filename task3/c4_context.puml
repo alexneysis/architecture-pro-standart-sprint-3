@@ -1,0 +1,36 @@
+@startuml c4 context task 3
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(new_client, "Новый клиент", "Пользователь сайта без регистрации в интернет-банке")
+Person(ib_client, "Клиент интернет-банка", "Авторизованный клиент банка")
+Person(call_center_manager, "Менеджер кол-центра", "Обрабатывает заявки новых клиентов")
+Person(deposit_manager, "Сотрудник депозитного бэк-офиса", "Подтверждает условия депозита в MVP")
+Person(branch_manager, "Сотрудник отделения", "Проводит идентификацию нового клиента")
+
+System(site, "Сайт банка", "Показывает депозитные продукты и принимает заявки новых клиентов")
+System(internet_bank, "Интернет-банк", "Показывает депозитные продукты и принимает заявки авторизованных клиентов")
+System(deposit_service, "Сервис депозитных заявок", "Принимает заявки на депозиты с сайта и интернет-банка")
+System(abs, "АБС", "Основная банковская система для обработки депозитов")
+System(call_center_system, "Система кол-центра", "Система для работы менеджеров с заявками клиентов")
+System_Ext(telecom_operator, "Телеком-оператор", "Доставляет SMS клиентам")
+
+Rel(new_client, site, "Смотрит депозиты и подаёт заявку", "HTTPS")
+Rel(site, deposit_service, "Передаёт заявку на депозит", "HTTPS")
+
+Rel(ib_client, internet_bank, "Смотрит депозиты и подаёт заявку", "HTTPS")
+Rel(internet_bank, deposit_service, "Передаёт заявку на депозит", "HTTPS")
+
+Rel(deposit_service, call_center_system, "Передаёт заявку нового клиента")
+Rel(call_center_manager, call_center_system, "Работает с заявкой")
+
+Rel(deposit_service, abs, "Передаёт заявку на обработку")
+Rel(deposit_manager, abs, "Подтверждает условия депозита")
+Rel(branch_manager, abs, "Идентифицирует нового клиента")
+
+Rel(internet_bank, telecom_operator, "Запрашивает SMS-код для подтверждения заявки")
+Rel(abs, telecom_operator, "Отправляет уведомления о ставке и открытии депозита")
+Rel(telecom_operator, new_client, "Доставляет SMS")
+Rel(telecom_operator, ib_client, "Доставляет SMS")
+
+@enduml
