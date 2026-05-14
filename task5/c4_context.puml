@@ -11,7 +11,9 @@ System(site, "Сайт банка", "Показывает кредитные п�
 System(internet_bank, "Интернет-банк", "Показывает кредитные предложения и принимает заявки авторизованных клиентов")
 System(credit_application_service, "Сервис кредитных заявок", "Принимает онлайн-заявки и передаёт их в кредитный процесс")
 System(credit_conveyor, "Кредитный конвейер", "Основная система обработки кредитных заявок")
+System(scoring, "Система кредитного скоринга", "Рассчитывает предварительное решение по кредитной заявке")
 System(abs, "АБС", "Основная банковская система для счетов, клиентов и финальных операций")
+System_Ext(bki, "Бюро кредитных историй", "Внешняя система для получения кредитной истории")
 System_Ext(telecom_operator, "Телеком-оператор", "Доставляет SMS клиентам")
 
 Rel(new_client, site, "Смотрит условия и подаёт заявку", "HTTPS")
@@ -19,6 +21,9 @@ Rel(site, credit_application_service, "Передаёт кредитную за�
 
 Rel(ib_client, internet_bank, "Смотрит предложения и подаёт заявку", "HTTPS")
 Rel(internet_bank, credit_application_service, "Передаёт кредитную заявку", "HTTPS")
+
+Rel(credit_application_service, scoring, "Запрашивает предварительное решение", "API")
+Rel(scoring, bki, "Запрашивает кредитную историю", "REST API")
 
 Rel(credit_application_service, credit_conveyor, "Передаёт заявку в обработку", "API")
 Rel(credit_manager, credit_conveyor, "Обрабатывает заявку")
